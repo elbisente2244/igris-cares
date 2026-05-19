@@ -1,0 +1,200 @@
+"use client"
+
+import { useState, useMemo } from "react"
+import Link from "next/link"
+import { motion } from "framer-motion"
+import { Calendar, MapPin, Clock, Users, ArrowRight } from "lucide-react"
+import { Header } from "@/components/header"
+import { Footer } from "@/components/footer"
+import { Button } from "@/components/ui/button"
+import { events } from "@/lib/data/events"
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
+}
+
+export default function EventsPage() {
+  const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all")
+
+  const filteredEvents = useMemo(() => {
+    if (filter === "all") return events
+    return events.filter((event) => event.status === filter)
+  }, [filter])
+
+  const upcomingEvents = events.filter((e) => e.status === "upcoming")
+  const pastEvents = events.filter((e) => e.status === "past")
+
+  return (
+    <>
+      <Header />
+      <main className="pt-16">
+        {/* Hero Section */}
+        <section className="bg-secondary py-20">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-center max-w-3xl mx-auto"
+            >
+              <span className="text-primary font-semibold text-sm uppercase tracking-wider">
+                Community Events
+              </span>
+              <h1 className="mt-3 text-4xl sm:text-5xl font-bold text-foreground tracking-tight text-balance">
+                Join Us in Making a Difference
+              </h1>
+              <p className="mt-4 text-lg text-muted-foreground text-pretty">
+                Be part of our events and witness the impact we create together. From health fairs to graduation ceremonies, every event brings us closer to our mission.
+              </p>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Filter Tabs */}
+        <section className="py-8 border-b border-border bg-background sticky top-16 z-40">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => setFilter("all")}
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                  filter === "all"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                All Events ({events.length})
+              </button>
+              <button
+                onClick={() => setFilter("upcoming")}
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                  filter === "upcoming"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Upcoming ({upcomingEvents.length})
+              </button>
+              <button
+                onClick={() => setFilter("past")}
+                className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                  filter === "past"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Past ({pastEvents.length})
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Events List */}
+        <section className="py-16 bg-background">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            {filteredEvents.length === 0 ? (
+              <div className="text-center py-16">
+                <p className="text-muted-foreground text-lg">
+                  No events found.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {filteredEvents.map((event, index) => (
+                  <motion.article
+                    key={event.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    <Link href={`/events/${event.id}`} className="block group">
+                      <div className="bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 hover:shadow-xl transition-all duration-300">
+                        <div className="grid md:grid-cols-3 gap-0">
+                          {/* Image */}
+                          <div className="aspect-video md:aspect-auto overflow-hidden">
+                            <img
+                              src={event.image}
+                              alt={event.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          </div>
+
+                          {/* Content */}
+                          <div className="md:col-span-2 p-6 md:p-8 flex flex-col justify-center">
+                            <div className="flex items-center gap-3 mb-4">
+                              <span
+                                className={`px-3 py-1 text-xs font-medium rounded-full ${
+                                  event.status === "upcoming"
+                                    ? "bg-primary/10 text-primary"
+                                    : "bg-secondary text-muted-foreground"
+                                }`}
+                              >
+                                {event.status === "upcoming" ? "Upcoming" : "Past Event"}
+                              </span>
+                            </div>
+
+                            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
+                              {event.name}
+                            </h2>
+
+                            <p className="text-muted-foreground mb-4 line-clamp-2">
+                              {event.description}
+                            </p>
+
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
+                              <span className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4 text-primary" />
+                                {formatDate(event.date)}
+                              </span>
+                              <span className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-primary" />
+                                {event.time}
+                              </span>
+                              <span className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-primary" />
+                                {event.location}
+                              </span>
+                              <span className="flex items-center gap-2">
+                                <Users className="h-4 w-4 text-primary" />
+                                {event.attendees}+ {event.status === "upcoming" ? "expected" : "attended"}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-primary font-medium">
+                              <span>View Details</span>
+                              <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.article>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-16 bg-secondary/50">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+              Want to Host an Event with Us?
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto mb-8">
+              Partner with IGRIS CARES to organize impactful community events. We provide resources, volunteers, and expertise.
+            </p>
+            <Button size="lg" asChild>
+              <Link href="/contact">Contact Us</Link>
+            </Button>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </>
+  )
+}
