@@ -3,49 +3,27 @@
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { useInView } from "framer-motion"
-import { useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ArrowRight, Calendar, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
-
-const featuredProjects = [
-  {
-    id: "1",
-    title: "Clean Water Initiative",
-    description:
-      "Providing sustainable access to clean drinking water for rural communities through well construction and water purification systems.",
-    image: "https://images.unsplash.com/photo-1541544741670-15e9fc8e9f7a?q=80&w=2070&auto=format&fit=crop",
-    location: "Northern Region",
-    date: "Ongoing",
-    impact: "15,000+ beneficiaries",
-    category: "Health & Sanitation",
-  },
-  {
-    id: "2",
-    title: "Education for All",
-    description:
-      "Building schools and providing educational resources to underserved children, ensuring every child has access to quality education.",
-    image: "https://images.unsplash.com/photo-1497486751825-1233686d5d80?q=80&w=2013&auto=format&fit=crop",
-    location: "Central District",
-    date: "Since 2020",
-    impact: "5,000+ students",
-    category: "Education",
-  },
-  {
-    id: "3",
-    title: "Women Empowerment Program",
-    description:
-      "Empowering women through vocational training, microfinance opportunities, and entrepreneurship development programs.",
-    image: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=2070&auto=format&fit=crop",
-    location: "Multiple Regions",
-    date: "Since 2019",
-    impact: "2,500+ women trained",
-    category: "Economic Development",
-  },
-]
+import { projects, type Project } from "@/lib/data/projects"
+import { loadPublicProjects } from "@/lib/public-data"
 
 export function FeaturedProjects() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
+  const [featuredProjects, setFeaturedProjects] = useState<Project[]>(projects)
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      const nextProjects = await loadPublicProjects()
+      if (active) setFeaturedProjects(nextProjects.slice(0, 3))
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   return (
     <section className="py-24 bg-secondary/50">
@@ -88,11 +66,12 @@ export function FeaturedProjects() {
               <Link href={`/projects/${project.id}`} className="block">
                 <div className="bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 hover:shadow-xl transition-all duration-300">
                   {/* Image */}
-                  <div className="aspect-[4/3] overflow-hidden">
+                  <div className="aspect-[4/3] overflow-hidden bg-secondary">
                     <img
                       src={project.image}
                       alt={project.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     />
                   </div>
 

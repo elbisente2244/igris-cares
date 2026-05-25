@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-
-// This API route handles contact form submissions
-// In production, this would use Firebase Admin SDK to write to Firestore
-// For now, we'll return a success response and the data can be stored client-side
+import { saveInquiry } from "@/lib/admin/firestore-data"
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,21 +24,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // In production, you would:
-    // 1. Initialize Firebase Admin SDK
-    // 2. Write to Firestore contacts collection
-    // 3. Optionally send email notification
-
-    // For now, log the submission and return success
-    console.log("Contact form submission:", {
-      sender_name: name,
-      sender_email: email,
-      phone: phone || null,
-      inquiry_type: inquiryType,
+    await saveInquiry({
+      name,
+      email,
+      phone: phone || undefined,
+      inquiryType,
       subject,
       message,
-      sent_at: new Date().toISOString(),
-      status: "new",
+      status: "unread",
+      createdAt: new Date().toISOString(),
     })
 
     return NextResponse.json(

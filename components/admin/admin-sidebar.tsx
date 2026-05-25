@@ -11,6 +11,7 @@ import {
   Images,
   Users,
   MessageSquare,
+  FileText,
   Settings,
   LogOut,
   Menu,
@@ -28,6 +29,7 @@ const navigation = [
   { name: "Events", href: "/admin/events", icon: Calendar },
   { name: "Gallery", href: "/admin/gallery", icon: Images },
   { name: "Partners", href: "/admin/partners", icon: Users },
+  { name: "Content", href: "/admin/content", icon: FileText },
   { name: "Inquiries", href: "/admin/inquiries", icon: MessageSquare },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ]
@@ -186,12 +188,20 @@ export function AdminSidebar() {
 }
 
 export function AdminHeader({ title }: { title: string }) {
+  const router = useRouter()
+
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-6 bg-background/80 backdrop-blur-sm border-b border-border">
       <div className="lg:hidden w-10" /> {/* Spacer for mobile menu button */}
       <h1 className="text-xl font-semibold text-foreground">{title}</h1>
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative"
+          onClick={() => router.push("/admin/inquiries")}
+          aria-label="View inquiries"
+        >
           <Bell className="h-5 w-5" />
           <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
         </Button>

@@ -161,5 +161,21 @@ export const sponsorTiers = {
   },
 }
 
-export type Partner = (typeof partners)[0]
-export type Sponsor = (typeof sponsors)[0]
+export type Partner = {
+  id: string
+  name: string
+  logo: string | null
+  description: string
+  contactPerson: string
+  website: string
+  projectsSupported: string[]
+}
+
+export type Sponsor = {
+  id: string
+  name: string
+  logo: string | null
+  tier: string
+  description: string
+  contributionAreas: string[]
+}

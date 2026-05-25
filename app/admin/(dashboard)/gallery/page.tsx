@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Plus,
@@ -17,13 +17,18 @@ import {
 import { AdminHeader } from "@/components/admin/admin-sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { ImageUploadField } from "@/components/admin/image-upload-field"
 import { galleryImages, type GalleryImage } from "@/lib/data/gallery"
+import { toast } from "sonner"
+import { deleteGalleryImage, ensureGallerySeeded, saveGalleryImage } from "@/lib/admin/firestore-data"
 
 export default function AdminGalleryPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -32,13 +37,33 @@ export default function AdminGalleryPage() {
   const [selectedImages, setSelectedImages] = useState<string[]>([])
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [previewImage, setPreviewImage] = useState<GalleryImage | null>(null)
+  const [uploadData, setUploadData] = useState({
+    url: "",
+    caption: "",
+    category: "",
+    eventId: "",
+    projectId: "",
+  })
 
-  const categories = ["all", ...Array.from(new Set(galleryImages.map((img) => img.category)))]
+  useEffect(() => {
+    let active = true
+
+    ;(async () => {
+      const nextImages = await ensureGallerySeeded()
+      if (active) setImages(nextImages)
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const categories = ["all", ...Array.from(new Set(images.map((img) => img.category)))]
 
   const filteredImages = images.filter((image) => {
-    const matchesSearch =
-      image.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      image.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    const caption = (image.caption ?? "").toString()
+    const q = searchQuery ?? ""
+    const matchesSearch = caption.toLowerCase().includes(q.toLowerCase())
     const matchesCategory = selectedCategory === "all" || image.category === selectedCategory
     return matchesSearch && matchesCategory
   })
@@ -51,14 +76,45 @@ export default function AdminGalleryPage() {
 
   const handleDeleteSelected = () => {
     if (confirm(`Are you sure you want to delete ${selectedImages.length} image(s)?`)) {
-      setImages(images.filter((img) => !selectedImages.includes(img.id)))
+      ;(async () => {
+        await Promise.all(selectedImages.map((id) => deleteGalleryImage(id)))
+        setImages((prev) => prev.filter((img) => !selectedImages.includes(img.id)))
+        toast.success("Images deleted.")
+      })()
       setSelectedImages([])
     }
   }
 
   const handleDeleteSingle = (id: string) => {
     if (confirm("Are you sure you want to delete this image?")) {
-      setImages(images.filter((img) => img.id !== id))
+      ;(async () => {
+        await deleteGalleryImage(id)
+        setImages((prev) => prev.filter((img) => img.id !== id))
+        toast.success("Image deleted.")
+      })()
+    }
+  }
+
+  const handleUpload = async () => {
+    if (!uploadData.url) return
+
+    const nextImage: GalleryImage = {
+      id: crypto.randomUUID(),
+      url: uploadData.url,
+      caption: uploadData.caption,
+      eventId: uploadData.eventId || null,
+      projectId: uploadData.projectId || null,
+      category: uploadData.category || "Uncategorized",
+    }
+
+    try {
+      await saveGalleryImage(nextImage)
+      setImages((prev) => [nextImage, ...prev])
+      setUploadData({ url: "", caption: "", category: "", eventId: "", projectId: "" })
+      setShowUploadModal(false)
+      toast.success("Image uploaded.")
+    } catch {
+      toast.error("Upload failed.")
     }
   }
 
@@ -216,36 +272,59 @@ export default function AdminGalleryPage() {
               </div>
 
               <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-12 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-foreground font-medium mb-1">
-                  Drag and drop images here
-                </p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  or click to browse files
-                </p>
-                <Button variant="outline" size="sm">
-                  Select Files
-                </Button>
+                <ImageUploadField
+                  label="Image"
+                  value={uploadData.url}
+                  onChange={(value) => setUploadData((prev) => ({ ...prev, url: value }))}
+                  helperText="Upload a file or paste an image URL."
+                />
               </div>
 
               <div className="mt-6 space-y-4">
                 <div>
+                  <label className="text-sm font-medium mb-2 block">Caption</label>
+                  <Textarea
+                    value={uploadData.caption}
+                    onChange={(e) => setUploadData((prev) => ({ ...prev, caption: e.target.value }))}
+                    placeholder="Describe the image"
+                    rows={3}
+                  />
+                </div>
+                <div>
                   <label className="text-sm font-medium mb-2 block">Category</label>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" className="w-full justify-between">
-                        Select category
-                        <Filter className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-full">
-                      {categories.filter(c => c !== "all").map((category) => (
-                        <DropdownMenuItem key={category} className="capitalize">
+                  <Select
+                    value={uploadData.category}
+                    onValueChange={(value) => setUploadData((prev) => ({ ...prev, category: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.filter((c) => c !== "all").map((category) => (
+                        <SelectItem key={category} value={category}>
                           {category}
-                        </DropdownMenuItem>
+                        </SelectItem>
                       ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Project ID</label>
+                    <Input
+                      value={uploadData.projectId}
+                      onChange={(e) => setUploadData((prev) => ({ ...prev, projectId: e.target.value }))}
+                      placeholder="Optional"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Event ID</label>
+                    <Input
+                      value={uploadData.eventId}
+                      onChange={(e) => setUploadData((prev) => ({ ...prev, eventId: e.target.value }))}
+                      placeholder="Optional"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -253,7 +332,7 @@ export default function AdminGalleryPage() {
                 <Button variant="outline" onClick={() => setShowUploadModal(false)}>
                   Cancel
                 </Button>
-                <Button>
+                <Button onClick={handleUpload} disabled={!uploadData.url}>
                   <Upload className="h-4 w-4 mr-2" />
                   Upload
                 </Button>
@@ -290,13 +369,13 @@ export default function AdminGalleryPage() {
               </Button>
               <img
                 src={previewImage.url}
-                alt={previewImage.title}
+                alt={previewImage.caption || "Gallery image"}
                 className="max-w-full max-h-full object-contain rounded-lg"
               />
               <div className="absolute bottom-4 left-4 right-4 text-center">
-                <h3 className="text-white text-lg font-medium">{previewImage.title}</h3>
-                {previewImage.description && (
-                  <p className="text-white/70 text-sm mt-1">{previewImage.description}</p>
+                <h3 className="text-white text-lg font-medium">{previewImage.caption || "Untitled"}</h3>
+                {previewImage.category && (
+                  <p className="text-white/70 text-sm mt-1 capitalize">{previewImage.category}</p>
                 )}
               </div>
             </motion.div>

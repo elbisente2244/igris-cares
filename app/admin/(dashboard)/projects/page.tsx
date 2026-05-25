@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import {
@@ -26,9 +26,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { projects, type Project } from "@/lib/data/projects"
+import { toast } from "sonner"
+import { deleteProject, ensureProjectsSeeded } from "@/lib/admin/firestore-data"
+import { ADMIN_STORAGE_KEYS, loadCollection, upsertById } from "@/lib/admin/local-data"
 
-const statusConfig = {
-  ongoing: { label: "Ongoing", icon: Clock, className: "bg-blue-100 text-blue-700" },
+const statusConfig: Record<string, { label: string; icon: typeof Clock; className: string }> = {
+  active: { label: "Active", icon: Clock, className: "bg-blue-100 text-blue-700" },
+  ongoing: { label: "Active", icon: Clock, className: "bg-blue-100 text-blue-700" },
   completed: { label: "Completed", icon: CheckCircle, className: "bg-green-100 text-green-700" },
   planned: { label: "Planned", icon: XCircle, className: "bg-orange-100 text-orange-700" },
 }
@@ -38,7 +42,25 @@ export default function AdminProjectsPage() {
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [projectList, setProjectList] = useState<Project[]>(projects)
 
-  const categories = ["all", ...Array.from(new Set(projects.map((p) => p.category)))]
+  useEffect(() => {
+    let active = true
+
+    ;(async () => {
+      const firestoreProjects = await ensureProjectsSeeded()
+      const localProjects = loadCollection<Project>(ADMIN_STORAGE_KEYS.projects, [])
+      const nextProjects = localProjects.reduce(
+        (acc, project) => upsertById(acc, project),
+        firestoreProjects,
+      )
+      if (active) setProjectList(nextProjects)
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const categories = ["all", ...Array.from(new Set(projectList.map((p) => p.category)))]
 
   const filteredProjects = projectList.filter((project) => {
     const matchesSearch =
@@ -50,7 +72,11 @@ export default function AdminProjectsPage() {
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this project?")) {
-      setProjectList(projectList.filter((p) => p.id !== id))
+      ;(async () => {
+        await deleteProject(id)
+        setProjectList((prev) => prev.filter((p) => p.id !== id))
+        toast.success("Project deleted.")
+      })()
     }
   }
 
@@ -116,7 +142,7 @@ export default function AdminProjectsPage() {
                 </thead>
                 <tbody>
                   {filteredProjects.map((project, index) => {
-                    const status = statusConfig[project.status]
+                    const status = statusConfig[project.status] ?? { label: project.status || "Unknown", icon: Clock, className: "bg-muted/10 text-muted-foreground" }
                     return (
                       <motion.tr
                         key={project.id}

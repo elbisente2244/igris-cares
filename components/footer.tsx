@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { Heart, Facebook, Twitter, Instagram, Linkedin, Mail } from "lucide-react"
+import { Facebook, MessageCircleMore, Mail } from "lucide-react"
+import { FooterNewsletter } from "@/components/footer-newsletter"
 
 const footerLinks = {
   company: [
@@ -22,10 +23,8 @@ const footerLinks = {
 }
 
 const socialLinks = [
-  { href: "#", icon: Facebook, label: "Facebook" },
-  { href: "#", icon: Twitter, label: "Twitter" },
-  { href: "#", icon: Instagram, label: "Instagram" },
-  { href: "#", icon: Linkedin, label: "LinkedIn" },
+  { href: "https://www.facebook.com/igriscares", icon: Facebook , label: "Facebook" },
+  { href: "https://www.facebook.com/messages/t/1012052945325009", icon: MessageCircleMore, label: "Messenger" },
 ]
 
 export function Footer() {
@@ -36,10 +35,8 @@ export function Footer() {
         <div className="py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
           {/* Brand Column */}
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                <Heart className="h-5 w-5 text-primary-foreground" />
-              </div>
+            <Link href="/" className="flex items-center gap-3 mb-6">
+              <img src="/round-logo.jpg" alt="IGRIS CARES" className="h-20 w-20 rounded-md object-contain" />
               <span className="text-xl font-semibold tracking-tight">
                 IGRIS CARES
               </span>
@@ -52,6 +49,8 @@ export function Footer() {
                 <a
                   key={social.label}
                   href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex h-10 w-10 items-center justify-center rounded-full bg-background/10 hover:bg-primary hover:text-primary-foreground transition-colors"
                   aria-label={social.label}
                 >
@@ -126,19 +125,7 @@ export function Footer() {
                 Subscribe to our newsletter for updates
               </span>
             </div>
-            <form className="flex gap-2 w-full md:w-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 md:w-64 px-4 py-2 rounded-lg bg-background/10 border border-background/20 text-sm placeholder:text-background/40 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <button
-                type="submit"
-                className="px-6 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-              >
-                Subscribe
-              </button>
-            </form>
+            <FooterNewsletter />
           </div>
         </div>
 

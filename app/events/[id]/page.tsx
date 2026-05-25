@@ -1,14 +1,18 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { ArrowLeft, MapPin, Calendar, Clock, Users, Share2, CalendarPlus } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { events } from "@/lib/data/events"
-import { projects } from "@/lib/data/projects"
+import { events, type Event } from "@/lib/data/events"
+import { projects, type Project } from "@/lib/data/projects"
+import { loadPublicEventById, loadPublicEvents, loadPublicProjects } from "@/lib/public-data"
+import { buildContactUrl, sharePage } from "@/lib/client/share"
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -21,8 +25,46 @@ function formatDate(dateString: string) {
 
 export default function EventDetailPage() {
   const params = useParams()
-  const event = events.find((e) => e.id === params.id)
-  const relatedProject = event ? projects.find((p) => p.id === event.projectId) : null
+  const [event, setEvent] = useState<Event | null>(events.find((e) => e.id === params.id) ?? null)
+  const [allEvents, setAllEvents] = useState<Event[]>(events)
+  const [relatedProject, setRelatedProject] = useState<Project | null>(null)
+  const [loaded, setLoaded] = useState(false)
+
+  const handleShare = async () => {
+    if (!event) return
+    const result = await sharePage(event.name)
+    if (result === "copied") toast.success("Event link copied to clipboard.")
+    else if (result) toast.success("Thanks for sharing!")
+  }
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      const [nextEvents, allProjects] = await Promise.all([loadPublicEvents(), loadPublicProjects()])
+      const current = await loadPublicEventById(String(params.id))
+      if (!active) return
+      setAllEvents(nextEvents)
+      setEvent(current)
+      const projectId = current ? (current.projectId ?? (current as Event & { project_id?: string }).project_id) : undefined
+      setRelatedProject(projectId ? allProjects.find((p) => p.id === projectId) ?? null : null)
+      setLoaded(true)
+    })()
+    return () => {
+      active = false
+    }
+  }, [params.id])
+
+  if (!loaded) {
+    return (
+      <>
+        <Header />
+        <main className="pt-16 min-h-screen flex items-center justify-center">
+          <div className="text-center text-muted-foreground">Loading event...</div>
+        </main>
+        <Footer />
+      </>
+    )
+  }
 
   if (!event) {
     return (
@@ -222,11 +264,18 @@ export default function EventDetailPage() {
                         Join This Event
                       </h3>
                       <div className="space-y-3">
-                        <Button className="w-full" size="lg">
-                          <CalendarPlus className="mr-2 h-4 w-4" />
-                          Register Now
+                        <Button className="w-full" size="lg" asChild>
+                          <Link
+                            href={buildContactUrl({
+                              subject: `Registration: ${event.name}`,
+                              inquiryType: "volunteer",
+                            })}
+                          >
+                            <CalendarPlus className="mr-2 h-4 w-4" />
+                            Register Now
+                          </Link>
                         </Button>
-                        <Button variant="outline" className="w-full">
+                        <Button variant="outline" className="w-full" onClick={handleShare}>
                           <Share2 className="mr-2 h-4 w-4" />
                           Share Event
                         </Button>
@@ -284,7 +333,7 @@ export default function EventDetailPage() {
               Other Events
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
-              {events
+              {allEvents
                 .filter((e) => e.id !== event.id)
                 .slice(0, 3)
                 .map((otherEvent) => (

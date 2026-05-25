@@ -1,22 +1,35 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, ChevronLeft, ChevronRight, Download } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { galleryImages, galleryCategories, type GalleryImage } from "@/lib/data/gallery"
+import { loadPublicGalleryImages } from "@/lib/public-data"
 
 export default function GalleryPage() {
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [galleryList, setGalleryList] = useState<GalleryImage[]>(galleryImages)
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      const nextImages = await loadPublicGalleryImages()
+      if (active) setGalleryList(nextImages)
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const filteredImages = useMemo(() => {
-    if (selectedCategory === "All") return galleryImages
-    return galleryImages.filter((img) => img.category === selectedCategory)
-  }, [selectedCategory])
+    if (selectedCategory === "All") return galleryList
+    return galleryList.filter((img) => img.category === selectedCategory)
+  }, [galleryList, selectedCategory])
 
   const openLightbox = (index: number) => {
     setCurrentImageIndex(index)
@@ -109,12 +122,13 @@ export default function GalleryPage() {
                 >
                   <button
                     onClick={() => openLightbox(index)}
-                    className="block w-full group relative rounded-xl overflow-hidden"
+                    className="block w-full group relative rounded-xl overflow-hidden bg-secondary"
                   >
                     <img
                       src={image.url}
                       alt={image.caption}
                       className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <div className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
@@ -185,7 +199,8 @@ export default function GalleryPage() {
               <img
                 src={currentImage.url}
                 alt={currentImage.caption}
-                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                className="max-w-full max-h-[70vh] object-contain rounded-lg bg-secondary"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
               <div className="mt-4 text-center">
                 <p className="text-background text-lg font-medium">

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Search,
@@ -26,6 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { deleteInquiry, getAllInquiries, updateInquiry } from "@/lib/admin/firestore-data"
 
 interface Inquiry {
   id: string
@@ -38,52 +39,6 @@ interface Inquiry {
   status: "unread" | "read" | "replied" | "archived"
   createdAt: string
 }
-
-// Sample inquiries data
-const sampleInquiries: Inquiry[] = [
-  {
-    id: "1",
-    name: "John Smith",
-    email: "john@company.com",
-    phone: "+1 234 567 8900",
-    inquiryType: "partnership",
-    subject: "Corporate Partnership Opportunity",
-    message: "We are interested in partnering with Igris Cares for our upcoming CSR initiatives. Our company has allocated a budget for community development projects and we believe your organization would be a great fit.",
-    status: "unread",
-    createdAt: "2024-01-15T10:30:00Z",
-  },
-  {
-    id: "2",
-    name: "Sarah Johnson",
-    email: "sarah@nonprofit.org",
-    inquiryType: "volunteer",
-    subject: "Volunteer Opportunity",
-    message: "I represent a group of 20 volunteers who would like to participate in your upcoming community outreach programs. Please let us know how we can get involved.",
-    status: "read",
-    createdAt: "2024-01-14T15:45:00Z",
-  },
-  {
-    id: "3",
-    name: "Michael Chen",
-    email: "michael@foundation.org",
-    phone: "+1 345 678 9012",
-    inquiryType: "donation",
-    subject: "Donation Inquiry",
-    message: "Our foundation is interested in making a substantial donation to support your education initiatives. Could you provide more details about your current projects and funding needs?",
-    status: "replied",
-    createdAt: "2024-01-13T09:15:00Z",
-  },
-  {
-    id: "4",
-    name: "Emily Brown",
-    email: "emily@school.edu",
-    inquiryType: "general",
-    subject: "School Visit Request",
-    message: "We would like to arrange a visit to one of your project sites as part of our social studies curriculum. Our students are learning about community service and philanthropy.",
-    status: "unread",
-    createdAt: "2024-01-12T14:20:00Z",
-  },
-]
 
 const statusConfig = {
   unread: { label: "Unread", icon: Clock, className: "bg-blue-100 text-blue-700" },
@@ -104,8 +59,19 @@ export default function AdminInquiriesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [selectedType, setSelectedType] = useState("all")
-  const [inquiries, setInquiries] = useState<Inquiry[]>(sampleInquiries)
+  const [inquiries, setInquiries] = useState<Inquiry[]>([])
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null)
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      const data = await getAllInquiries()
+      if (active) setInquiries(data)
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const statuses = ["all", "unread", "read", "replied", "archived"]
   const types = ["all", "partnership", "volunteer", "donation", "general", "media"]
@@ -123,17 +89,37 @@ export default function AdminInquiriesPage() {
   const unreadCount = inquiries.filter((i) => i.status === "unread").length
 
   const handleMarkAsRead = (id: string) => {
-    setInquiries(inquiries.map((i) => 
-      i.id === id ? { ...i, status: "read" as const } : i
-    ))
+    ;(async () => {
+      await updateInquiry(id, { status: "read" })
+      setInquiries((prev) => prev.map((i) => (i.id === id ? { ...i, status: "read" as const } : i)))
+    })()
+  }
+
+  const handleMarkAsReplied = (id: string) => {
+    ;(async () => {
+      await updateInquiry(id, { status: "replied" })
+      setInquiries((prev) => prev.map((i) => (i.id === id ? { ...i, status: "replied" as const } : i)))
+      setSelectedInquiry((prev) => (prev?.id === id ? { ...prev, status: "replied" } : prev))
+    })()
+  }
+
+  const handleArchive = (id: string) => {
+    ;(async () => {
+      await updateInquiry(id, { status: "archived" })
+      setInquiries((prev) => prev.map((i) => (i.id === id ? { ...i, status: "archived" as const } : i)))
+      setSelectedInquiry((prev) => (prev?.id === id ? { ...prev, status: "archived" } : prev))
+    })()
   }
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this inquiry?")) {
-      setInquiries(inquiries.filter((i) => i.id !== id))
-      if (selectedInquiry?.id === id) {
-        setSelectedInquiry(null)
-      }
+      ;(async () => {
+        await deleteInquiry(id)
+        setInquiries((prev) => prev.filter((i) => i.id !== id))
+        if (selectedInquiry?.id === id) {
+          setSelectedInquiry(null)
+        }
+      })()
     }
   }
 
@@ -387,15 +373,25 @@ export default function AdminInquiriesPage() {
                 </div>
               </div>
 
-              <div className="p-4 border-t flex items-center gap-3">
+              <div className="p-4 border-t flex flex-wrap items-center gap-2">
                 <Button
-                  className="flex-1"
+                  className="flex-1 min-w-[140px]"
                   onClick={() => {
-                    window.location.href = `mailto:${selectedInquiry.email}?subject=Re: ${selectedInquiry.subject}`
+                    window.location.href = `mailto:${selectedInquiry.email}?subject=${encodeURIComponent(`Re: ${selectedInquiry.subject}`)}`
                   }}
                 >
                   <Reply className="h-4 w-4 mr-2" />
                   Reply via Email
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => handleMarkAsReplied(selectedInquiry.id)}
+                  disabled={selectedInquiry.status === "replied"}
+                >
+                  Mark Replied
+                </Button>
+                <Button variant="outline" onClick={() => handleArchive(selectedInquiry.id)}>
+                  Archive
                 </Button>
                 <Button
                   variant="outline"

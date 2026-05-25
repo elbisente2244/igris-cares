@@ -5,30 +5,33 @@ import { useInView } from "framer-motion"
 import { useRef } from "react"
 import { Target, Eye, Sparkles } from "lucide-react"
 
-const values = [
-  {
-    icon: Target,
-    title: "Our Mission",
-    description:
-      "To create sustainable change in underserved communities through collaborative partnerships, innovative programs, and genuine care for every individual we serve.",
-  },
-  {
-    icon: Eye,
-    title: "Our Vision",
-    description:
-      "A world where every community has access to the resources, opportunities, and support they need to thrive and build a brighter future for generations to come.",
-  },
-  {
-    icon: Sparkles,
-    title: "Our Values",
-    description:
-      "Integrity, compassion, sustainability, and collaboration guide everything we do. We believe in transparency, measurable impact, and empowering local leaders.",
-  },
-]
-
-export function MissionSection() {
+export function MissionSection({ frontmatter = {}, content = "" }: { frontmatter?: any; content?: string }) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
+
+  const values = frontmatter.values || [
+    {
+      icon: Target,
+      title: "Our Mission",
+      description:
+        frontmatter.description ||
+        "To create sustainable change in underserved communities through collaborative partnerships, innovative programs, and genuine care for every individual we serve.",
+    },
+    {
+      icon: Eye,
+      title: "Our Vision",
+      description:
+        frontmatter.vision ||
+        "A world where every community has access to the resources, opportunities, and support they need to thrive and build a brighter future for generations to come.",
+    },
+    {
+      icon: Sparkles,
+      title: "Our Values",
+      description:
+        frontmatter.values_text ||
+        "Integrity, compassion, sustainability, and collaboration guide everything we do. We believe in transparency, measurable impact, and empowering local leaders.",
+    },
+  ]
 
   return (
     <section className="py-24 bg-background">
@@ -41,19 +44,20 @@ export function MissionSection() {
           className="text-center mb-16"
         >
           <span className="text-primary font-semibold text-sm uppercase tracking-wider">
-            Who We Are
+            {frontmatter.kicker || "Who We Are"}
           </span>
           <h2 className="mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground tracking-tight text-balance">
-            Driven by Purpose,{" "}
-            <span className="text-primary">Guided by Heart</span>
+            {frontmatter.title || (
+              <>Driven by Purpose, <span className="text-primary">Guided by Heart</span></>
+            )}
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto text-pretty">
-            IGRIS CARES is dedicated to transforming communities through meaningful outreach and sustainable development initiatives.
+            {frontmatter.description || content || "IGRIS CARES is dedicated to transforming communities through meaningful outreach and sustainable development initiatives."}
           </p>
         </motion.div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {values.map((value, index) => (
+          {values.map((value: any, index: number) => (
             <motion.div
               key={value.title}
               initial={{ opacity: 0, y: 20 }}

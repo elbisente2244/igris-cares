@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
+import { toast } from "sonner"
 import { motion } from "framer-motion"
 import { 
   MapPin, 
@@ -10,9 +12,7 @@ import {
   Send, 
   CheckCircle2,
   Facebook,
-  Twitter,
-  Instagram,
-  Linkedin
+  MessageCircleMore
 } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
@@ -24,30 +24,28 @@ const contactInfo = [
   {
     icon: MapPin,
     title: "Our Office",
-    details: ["123 Community Drive", "Social Impact District", "City, Country 12345"],
+    details: ["4/F, Barangay, Golden Coreville Building, Nueva villa subdivision, Batangas City, 4200 Batangas"],
   },
   {
     icon: Phone,
     title: "Phone",
-    details: ["+1 (555) 123-4567", "+1 (555) 987-6543"],
+    details: ["+63 906 358 9563", "043 756 4421"],
   },
   {
     icon: Mail,
     title: "Email",
-    details: ["info@igriscares.org", "partnerships@igriscares.org"],
+    details: ["inquiry@igrisofficial.com"],
   },
   {
     icon: Clock,
     title: "Office Hours",
-    details: ["Monday - Friday: 9:00 AM - 6:00 PM", "Saturday: 10:00 AM - 2:00 PM"],
+    details: ["Monday - Friday: 7:00 AM - 4:30 PM", "Saturday: 7:00 AM - 12:30 PM"],
   },
 ]
 
 const socialLinks = [
-  { icon: Facebook, href: "#", label: "Facebook" },
-  { icon: Twitter, href: "#", label: "Twitter" },
-  { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: Linkedin, href: "#", label: "LinkedIn" },
+  { icon: Facebook, href: "https://www.facebook.com/igriscares", label: "Facebook" },
+  { icon: MessageCircleMore, href: "https://www.facebook.com/messages/t/1012052945325009", label: "Messenger" },
 ]
 
 const inquiryTypes = [
@@ -59,7 +57,8 @@ const inquiryTypes = [
   "Other",
 ]
 
-export default function ContactPage() {
+function ContactPageForm() {
+  const searchParams = useSearchParams()
   const [formState, setFormState] = useState({
     name: "",
     email: "",
@@ -70,6 +69,20 @@ export default function ContactPage() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+
+  useEffect(() => {
+    const subject = searchParams.get("subject")
+    const inquiryType = searchParams.get("inquiryType")
+    const message = searchParams.get("message")
+    if (subject || inquiryType || message) {
+      setFormState((prev) => ({
+        ...prev,
+        subject: subject ?? prev.subject,
+        inquiryType: inquiryType ?? prev.inquiryType,
+        message: message ?? prev.message,
+      }))
+    }
+  }, [searchParams])
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -96,6 +109,7 @@ export default function ContactPage() {
       }
 
       setIsSubmitted(true)
+      toast.success("Message sent! We'll get back to you soon.")
 
       // Reset form after showing success
       setTimeout(() => {
@@ -111,7 +125,7 @@ export default function ContactPage() {
       }, 3000)
     } catch (error) {
       console.error("Form submission error:", error)
-      alert("Failed to send message. Please try again.")
+      toast.error("Failed to send message. Please try again.")
     } finally {
       setIsSubmitting(false)
     }
@@ -188,6 +202,8 @@ export default function ContactPage() {
                       <a
                         key={social.label}
                         href={social.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         aria-label={social.label}
                         className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
                       >
@@ -446,5 +462,13 @@ export default function ContactPage() {
       </main>
       <Footer />
     </>
+  )
+}
+
+export default function ContactPage() {
+  return (
+    <Suspense fallback={null}>
+      <ContactPageForm />
+    </Suspense>
   )
 }

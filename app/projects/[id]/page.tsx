@@ -1,17 +1,57 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { ArrowLeft, MapPin, Calendar, Users, Play, Share2, Heart } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { projects } from "@/lib/data/projects"
+import { projects, type Project } from "@/lib/data/projects"
+import { loadPublicProjectById, loadPublicProjects } from "@/lib/public-data"
+import { buildContactUrl, sharePage } from "@/lib/client/share"
 
 export default function ProjectDetailPage() {
   const params = useParams()
-  const project = projects.find((p) => p.id === params.id)
+  const [project, setProject] = useState<Project | null>(projects.find((p) => p.id === params.id) ?? null)
+  const [relatedProjects, setRelatedProjects] = useState<Project[]>(projects)
+  const [loaded, setLoaded] = useState(false)
+
+  const handleShare = async () => {
+    if (!project) return
+    const result = await sharePage(project.title)
+    if (result === "copied") toast.success("Project link copied to clipboard.")
+    else if (result) toast.success("Thanks for sharing!")
+  }
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      const allProjects = await loadPublicProjects()
+      const current = await loadPublicProjectById(String(params.id))
+      if (!active) return
+      setRelatedProjects(allProjects)
+      setProject(current)
+      setLoaded(true)
+    })()
+    return () => {
+      active = false
+    }
+  }, [params.id])
+
+  if (!loaded) {
+    return (
+      <>
+        <Header />
+        <main className="pt-16 min-h-screen flex items-center justify-center">
+          <div className="text-center text-muted-foreground">Loading project...</div>
+        </main>
+        <Footer />
+      </>
+    )
+  }
 
   if (!project) {
     return (
@@ -102,9 +142,14 @@ export default function ProjectDetailPage() {
                   <h2 className="text-2xl font-bold text-foreground mb-4">
                     About This Project
                   </h2>
-                  <p className="text-muted-foreground leading-relaxed mb-8">
+                  <p className="text-muted-foreground leading-relaxed mb-4">
                     {project.description}
                   </p>
+                  {(project as Project & { fullDescription?: string }).fullDescription && (
+                    <p className="text-muted-foreground leading-relaxed mb-8 whitespace-pre-wrap">
+                      {(project as Project & { fullDescription?: string }).fullDescription}
+                    </p>
+                  )}
 
                   {/* Video Section */}
                   {project.videoLinks && project.videoLinks.length > 0 && (
@@ -112,11 +157,23 @@ export default function ProjectDetailPage() {
                       <h3 className="text-xl font-semibold text-foreground mb-4">
                         Watch Our Impact
                       </h3>
-                      <div className="aspect-video bg-secondary rounded-xl flex items-center justify-center border border-border">
-                        <Button variant="outline" size="lg">
-                          <Play className="mr-2 h-5 w-5" />
-                          Play Video
-                        </Button>
+                      <div className="space-y-3">
+                        {project.videoLinks.map((videoUrl, idx) => (
+                          <div
+                            key={`${videoUrl}-${idx}`}
+                            className="bg-secondary rounded-xl p-4 border border-border flex items-center justify-between gap-4"
+                          >
+                            <p className="text-sm text-muted-foreground truncate flex-1">
+                              {videoUrl}
+                            </p>
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={videoUrl} target="_blank" rel="noopener noreferrer">
+                                <Play className="mr-2 h-4 w-4" />
+                                Open Video
+                              </a>
+                            </Button>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
@@ -157,11 +214,18 @@ export default function ProjectDetailPage() {
                       Support This Project
                     </h3>
                     <div className="space-y-3">
-                      <Button className="w-full" size="lg">
-                        <Heart className="mr-2 h-4 w-4" />
-                        Donate Now
+                      <Button className="w-full" size="lg" asChild>
+                        <Link
+                          href={buildContactUrl({
+                            subject: `Support: ${project.title}`,
+                            inquiryType: "donation",
+                          })}
+                        >
+                          <Heart className="mr-2 h-4 w-4" />
+                          Donate Now
+                        </Link>
                       </Button>
-                      <Button variant="outline" className="w-full">
+                      <Button variant="outline" className="w-full" onClick={handleShare}>
                         <Share2 className="mr-2 h-4 w-4" />
                         Share Project
                       </Button>
@@ -218,7 +282,7 @@ export default function ProjectDetailPage() {
               Related Projects
             </h2>
             <div className="grid md:grid-cols-3 gap-8">
-              {projects
+              {relatedProjects
                 .filter((p) => p.id !== project.id && p.category === project.category)
                 .slice(0, 3)
                 .map((relatedProject) => (

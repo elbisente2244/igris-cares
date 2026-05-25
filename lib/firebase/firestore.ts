@@ -4,6 +4,7 @@ import {
   getDocs,
   getDoc,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -63,6 +64,19 @@ export async function addDocument<T extends DocumentData>(
     ...data,
     created_at: Timestamp.now(),
   })
+  return docRef.id
+}
+
+export async function setDocument<T extends DocumentData>(
+  collectionName: string,
+  documentId: string,
+  data: T
+): Promise<string> {
+  const docRef = doc(db, collectionName, documentId)
+  await setDoc(docRef, {
+    ...data,
+    updated_at: Timestamp.now(),
+  }, { merge: true })
   return docRef.id
 }
 

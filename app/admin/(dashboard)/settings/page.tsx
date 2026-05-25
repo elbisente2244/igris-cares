@@ -1,38 +1,35 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Save, Globe, Bell, Lock, Palette } from "lucide-react"
+import { toast } from "sonner"
 import { AdminHeader } from "@/components/admin/admin-sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
+import { DEFAULT_SITE_SETTINGS, loadSiteSettings, saveSiteSettings, type SiteSettings } from "@/lib/site-settings"
 
 export default function AdminSettingsPage() {
   const [isSaving, setIsSaving] = useState(false)
-  const [settings, setSettings] = useState({
-    siteName: "Igris Cares",
-    tagline: "Making a Difference Together",
-    email: "contact@igriscares.org",
-    phone: "+63 123 456 7890",
-    address: "123 Main Street, Manila, Philippines",
-    facebook: "https://facebook.com/igriscares",
-    twitter: "https://twitter.com/igriscares",
-    instagram: "https://instagram.com/igriscares",
-    linkedin: "https://linkedin.com/company/igriscares",
-    enableDonations: true,
-    enableVolunteerSignup: true,
-    enableNewsletter: true,
-    maintenanceMode: false,
-  })
+  const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SITE_SETTINGS)
+
+  useEffect(() => {
+    setSettings(loadSiteSettings())
+  }, [])
 
   const handleSave = async () => {
     setIsSaving(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    console.log("Saving settings:", settings)
-    setIsSaving(false)
+    try {
+      saveSiteSettings(settings)
+      toast.success("Settings saved on this device.")
+    } catch {
+      toast.error("Could not save settings.")
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (

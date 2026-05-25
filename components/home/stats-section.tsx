@@ -8,14 +8,14 @@ import { Users, Heart, MapPin, Calendar } from "lucide-react"
 const stats = [
   {
     icon: Users,
-    value: 50000,
+    value: 1000,
     suffix: "+",
     label: "Lives Impacted",
     description: "Individuals reached through our programs",
   },
   {
     icon: Heart,
-    value: 120,
+    value: 10,
     suffix: "+",
     label: "Projects Completed",
     description: "Successful outreach initiatives",
@@ -29,10 +29,10 @@ const stats = [
   },
   {
     icon: Calendar,
-    value: 6,
+    value: 4,
     suffix: "+",
     label: "Years of Impact",
-    description: "Making a difference since 2018",
+    description: "Building with care since 2022",
   },
 ]
 

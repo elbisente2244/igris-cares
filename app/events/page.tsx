@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Calendar, MapPin, Clock, Users, ArrowRight } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
-import { events } from "@/lib/data/events"
+import { events, type Event } from "@/lib/data/events"
+import { loadPublicEvents } from "@/lib/public-data"
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString("en-US", {
@@ -20,14 +21,33 @@ function formatDate(dateString: string) {
 
 export default function EventsPage() {
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("all")
+  const [eventList, setEventList] = useState<Event[]>(events)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      try {
+        const nextEvents = await loadPublicEvents()
+        if (active) setEventList(nextEvents.length > 0 ? nextEvents : events)
+      } catch {
+        if (active) setEventList(events)
+      } finally {
+        if (active) setLoading(false)
+      }
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const filteredEvents = useMemo(() => {
-    if (filter === "all") return events
-    return events.filter((event) => event.status === filter)
-  }, [filter])
+    if (filter === "all") return eventList
+    return eventList.filter((event) => event.status === filter)
+  }, [eventList, filter])
 
-  const upcomingEvents = events.filter((e) => e.status === "upcoming")
-  const pastEvents = events.filter((e) => e.status === "past")
+  const upcomingEvents = eventList.filter((e) => e.status === "upcoming")
+  const pastEvents = eventList.filter((e) => e.status === "past")
 
   return (
     <>
@@ -67,7 +87,7 @@ export default function EventsPage() {
                     : "bg-secondary text-muted-foreground hover:text-foreground"
                 }`}
               >
-                All Events ({events.length})
+                All Events ({eventList.length})
               </button>
               <button
                 onClick={() => setFilter("upcoming")}
@@ -96,7 +116,11 @@ export default function EventsPage() {
         {/* Events List */}
         <section className="py-16 bg-background">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            {filteredEvents.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-16">
+                <p className="text-muted-foreground text-lg">Loading events...</p>
+              </div>
+            ) : filteredEvents.length === 0 ? (
               <div className="text-center py-16">
                 <p className="text-muted-foreground text-lg">
                   No events found.
@@ -115,11 +139,12 @@ export default function EventsPage() {
                       <div className="bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 hover:shadow-xl transition-all duration-300">
                         <div className="grid md:grid-cols-3 gap-0">
                           {/* Image */}
-                          <div className="aspect-video md:aspect-auto overflow-hidden">
+                          <div className="aspect-video md:aspect-auto overflow-hidden bg-secondary">
                             <img
                               src={event.image}
                               alt={event.name}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
                             />
                           </div>
 

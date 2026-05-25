@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Search, Filter, MapPin, Calendar, ArrowRight } from "lucide-react"
@@ -8,14 +8,27 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { projects, categories } from "@/lib/data/projects"
+import { projects, categories, type Project } from "@/lib/data/projects"
+import { loadPublicProjects } from "@/lib/public-data"
 
 export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
+  const [projectList, setProjectList] = useState<Project[]>(projects)
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      const nextProjects = await loadPublicProjects()
+      if (active) setProjectList(nextProjects)
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   const filteredProjects = useMemo(() => {
-    return projects.filter((project) => {
+    return projectList.filter((project) => {
       const matchesSearch =
         project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         project.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -23,7 +36,7 @@ export default function ProjectsPage() {
         selectedCategory === "All" || project.category === selectedCategory
       return matchesSearch && matchesCategory
     })
-  }, [searchQuery, selectedCategory])
+  }, [projectList, searchQuery, selectedCategory])
 
   return (
     <>
@@ -124,11 +137,12 @@ export default function ProjectsPage() {
                       <Link href={`/projects/${project.id}`} className="block">
                         <div className="bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 hover:shadow-xl transition-all duration-300">
                           {/* Image */}
-                          <div className="aspect-[4/3] overflow-hidden">
+                          <div className="aspect-[4/3] overflow-hidden bg-secondary">
                             <img
                               src={project.image}
                               alt={project.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
                             />
                           </div>
 

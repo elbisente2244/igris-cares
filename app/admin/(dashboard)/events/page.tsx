@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import {
@@ -26,11 +26,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { events, type Event } from "@/lib/data/events"
+import { toast } from "sonner"
+import { deleteEvent, ensureEventsSeeded } from "@/lib/admin/firestore-data"
 
-const statusConfig = {
+const statusConfig: Record<string, { label: string; className: string }> = {
   upcoming: { label: "Upcoming", className: "bg-blue-100 text-blue-700" },
   ongoing: { label: "Ongoing", className: "bg-green-100 text-green-700" },
-  completed: { label: "Completed", className: "bg-gray-100 text-gray-700" },
+  past: { label: "Past", className: "bg-gray-100 text-gray-700" },
+  completed: { label: "Past", className: "bg-gray-100 text-gray-700" },
 }
 
 export default function AdminEventsPage() {
@@ -38,17 +41,40 @@ export default function AdminEventsPage() {
   const [selectedStatus, setSelectedStatus] = useState("all")
   const [eventList, setEventList] = useState<Event[]>(events)
 
+  useEffect(() => {
+    let active = true
+
+    ;(async () => {
+      const nextEvents = await ensureEventsSeeded()
+      if (active) setEventList(nextEvents)
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [])
+
   const filteredEvents = eventList.filter((event) => {
+    const title = (event.title ?? event.name ?? "").toString()
+    const description = (event.description ?? "").toString()
+    const q = searchQuery ?? ""
     const matchesSearch =
-      event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = selectedStatus === "all" || event.status === selectedStatus
+      title.toLowerCase().includes(q.toLowerCase()) ||
+      description.toLowerCase().includes(q.toLowerCase())
+    const matchesStatus =
+      selectedStatus === "all" ||
+      event.status === selectedStatus ||
+      (selectedStatus === "past" && event.status === "completed")
     return matchesSearch && matchesStatus
   })
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this event?")) {
-      setEventList(eventList.filter((e) => e.id !== id))
+      ;(async () => {
+        await deleteEvent(id)
+        setEventList((prev) => prev.filter((e) => e.id !== id))
+        toast.success("Event deleted.")
+      })()
     }
   }
 
@@ -86,8 +112,8 @@ export default function AdminEventsPage() {
                 <DropdownMenuItem onClick={() => setSelectedStatus("ongoing")}>
                   Ongoing
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSelectedStatus("completed")}>
-                  Completed
+                <DropdownMenuItem onClick={() => setSelectedStatus("past")}>
+                  Past
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -103,7 +129,7 @@ export default function AdminEventsPage() {
         {/* Events Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredEvents.map((event, index) => {
-            const status = statusConfig[event.status]
+            const status = statusConfig[event.status] ?? { label: event.status || "Unknown", className: "bg-muted/10 text-muted-foreground" }
             return (
               <motion.div
                 key={event.id}
@@ -132,7 +158,7 @@ export default function AdminEventsPage() {
                   </div>
                   <CardContent className="p-4">
                     <h3 className="font-semibold text-foreground mb-2 line-clamp-1">
-                      {event.title}
+                      {event.title ?? event.name}
                     </h3>
                     <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                       {event.description}

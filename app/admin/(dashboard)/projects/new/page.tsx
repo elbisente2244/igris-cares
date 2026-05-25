@@ -10,6 +10,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ImageUploadField } from "@/components/admin/image-upload-field"
+import { toast } from "sonner"
+import { saveProject } from "@/lib/admin/firestore-data"
 import {
   Select,
   SelectContent,
@@ -18,8 +21,15 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+function textToList(value: string) {
+  return value
+    .split(/\r?\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
+
 const categories = ["Education", "Healthcare", "Environment", "Community", "Livelihood"]
-const statuses = ["ongoing", "completed", "planned"]
+const statuses = ["active", "completed", "planned"]
 
 export default function NewProjectPage() {
   const router = useRouter()
@@ -30,7 +40,7 @@ export default function NewProjectPage() {
     fullDescription: "",
     category: "",
     location: "",
-    status: "ongoing",
+    status: "active",
     startDate: "",
     endDate: "",
     impact: "",
@@ -39,18 +49,37 @@ export default function NewProjectPage() {
     donations: "",
     image: "",
     gallery: [] as string[],
+    videoLinksText: "",
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
 
-    // Simulate API call - would connect to Firebase in production
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    console.log("Creating project:", formData)
-    setIsSubmitting(false)
-    router.push("/admin/projects")
+    try {
+      await saveProject({
+        id: crypto.randomUUID(),
+        title: formData.title,
+        description: formData.description,
+        fullDescription: formData.fullDescription,
+        videoLinks: textToList(formData.videoLinksText),
+        image: formData.image,
+        location: formData.location,
+        date: formData.startDate || "Ongoing",
+        impact: formData.impact,
+        category: formData.category,
+        status: formData.status as "active" | "completed" | "planned",
+        partners: [],
+        sponsors: [],
+        created_at: new Date(),
+      } as Parameters<typeof saveProject>[0])
+      toast.success("Project created.")
+      router.push("/admin/projects")
+    } catch {
+      toast.error("Failed to create project.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleChange = (
@@ -274,17 +303,12 @@ export default function NewProjectPage() {
                 <CardTitle>Images</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Featured Image URL
-                  </label>
-                  <Input
-                    name="image"
-                    value={formData.image}
-                    onChange={handleChange}
-                    placeholder="https://..."
-                  />
-                </div>
+                <ImageUploadField
+                  label="Featured Image"
+                  value={formData.image}
+                  onChange={(value) => setFormData((prev) => ({ ...prev, image: value }))}
+                  helperText="Choose a file or paste an image URL."
+                />
 
                 <div>
                   <label className="text-sm font-medium mb-2 block">
@@ -299,6 +323,27 @@ export default function NewProjectPage() {
                       PNG, JPG up to 10MB
                     </p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Linked Content */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Linked Content</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    Video Links
+                  </label>
+                  <Textarea
+                    name="videoLinksText"
+                    value={formData.videoLinksText}
+                    onChange={handleChange}
+                    placeholder="Paste one link per line (YouTube, Vimeo, etc.)"
+                    rows={4}
+                  />
                 </div>
               </CardContent>
             </Card>

@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { useInView } from "framer-motion"
@@ -8,17 +9,33 @@ import { ExternalLink, Users, Building2, Award } from "lucide-react"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
-import { partners, sponsors, sponsorTiers } from "@/lib/data/partners"
+import { partners as seedPartners, sponsors as seedSponsors, sponsorTiers, type Partner, type Sponsor } from "@/lib/data/partners"
+import { loadPublicPartners, loadPublicSponsors } from "@/lib/public-data"
 
 export default function PartnersPage() {
   const partnersRef = useRef(null)
   const sponsorsRef = useRef(null)
   const partnersInView = useInView(partnersRef, { once: true, margin: "-100px" })
   const sponsorsInView = useInView(sponsorsRef, { once: true, margin: "-100px" })
+  const [partnerList, setPartnerList] = useState<Partner[]>(seedPartners)
+  const [sponsorList, setSponsorList] = useState<Sponsor[]>(seedSponsors)
 
-  const platinumSponsors = sponsors.filter((s) => s.tier === "platinum")
-  const goldSponsors = sponsors.filter((s) => s.tier === "gold")
-  const silverSponsors = sponsors.filter((s) => s.tier === "silver")
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      const [nextPartners, nextSponsors] = await Promise.all([loadPublicPartners(), loadPublicSponsors()])
+      if (!active) return
+      setPartnerList(nextPartners)
+      setSponsorList(nextSponsors)
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const platinumSponsors = sponsorList.filter((s) => s.tier === "platinum")
+  const goldSponsors = sponsorList.filter((s) => s.tier === "gold")
+  const silverSponsors = sponsorList.filter((s) => s.tier === "silver")
 
   return (
     <>
@@ -52,13 +69,13 @@ export default function PartnersPage() {
             <div className="grid grid-cols-3 gap-8 text-center">
               <div>
                 <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
-                  {partners.length}+
+                  {partnerList.length}+
                 </div>
                 <p className="text-sm text-muted-foreground">Implementation Partners</p>
               </div>
               <div>
                 <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
-                  {sponsors.length}+
+                  {sponsorList.length}+
                 </div>
                 <p className="text-sm text-muted-foreground">Corporate Sponsors</p>
               </div>
@@ -241,7 +258,7 @@ export default function PartnersPage() {
             </motion.div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {partners.map((partner, index) => (
+              {partnerList.map((partner, index) => (
                 <motion.div
                   key={partner.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -304,8 +321,13 @@ export default function PartnersPage() {
                 size="lg"
                 variant="outline"
                 className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 bg-transparent"
+                asChild
               >
-                Download Partnership Guide
+                <Link
+                  href="/contact?inquiryType=partnership&subject=Partnership%20guide%20request"
+                >
+                  Download Partnership Guide
+                </Link>
               </Button>
             </div>
           </div>

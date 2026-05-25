@@ -10,6 +10,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ImageUploadField } from "@/components/admin/image-upload-field"
+import { toast } from "sonner"
+import { saveEvent } from "@/lib/admin/firestore-data"
+import { type Event } from "@/lib/data/events"
 import {
   Select,
   SelectContent,
@@ -19,7 +23,7 @@ import {
 } from "@/components/ui/select"
 
 const categories = ["Outreach", "Fundraiser", "Volunteer", "Workshop", "Community"]
-const statuses = ["upcoming", "ongoing", "completed"]
+const statuses = ["upcoming", "ongoing", "past"]
 
 export default function NewEventPage() {
   const router = useRouter()
@@ -43,10 +47,31 @@ export default function NewEventPage() {
     e.preventDefault()
     setIsSubmitting(true)
 
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    console.log("Creating event:", formData)
-    setIsSubmitting(false)
-    router.push("/admin/events")
+    try {
+      await saveEvent({
+        id: crypto.randomUUID(),
+        name: formData.title,
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        date: formData.date,
+        time: formData.time,
+        projectId: "",
+        image: formData.image,
+        photos: formData.image ? [formData.image] : [],
+        partners: [],
+        sponsors: [],
+        status: formData.status as Event["status"],
+        attendees: formData.capacity ? Number.parseInt(formData.capacity, 10) : 0,
+        created_at: new Date(),
+      } as Parameters<typeof saveEvent>[0])
+      toast.success("Event created.")
+      router.push("/admin/events")
+    } catch {
+      toast.error("Failed to create event.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleChange = (
@@ -127,7 +152,7 @@ export default function NewEventPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((category) => (
-                          <SelectItem key={category} value={category.toLowerCase()}>
+                          <SelectItem key={category} value={category}>
                             {category}
                           </SelectItem>
                         ))}
@@ -226,21 +251,12 @@ export default function NewEventPage() {
                 <CardTitle>Event Image</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Image URL</label>
-                  <Input
-                    name="image"
-                    value={formData.image}
-                    onChange={handleChange}
-                    placeholder="https://..."
-                  />
-                </div>
-                <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                  <ImagePlus className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Click to upload or drag and drop
-                  </p>
-                </div>
+                <ImageUploadField
+                  label="Event Image"
+                  value={formData.image}
+                  onChange={(value) => setFormData((prev) => ({ ...prev, image: value }))}
+                  helperText="Choose a file or paste an image URL."
+                />
               </CardContent>
             </Card>
 

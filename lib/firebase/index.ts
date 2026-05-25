@@ -7,6 +7,7 @@ export {
   getAllDocuments,
   getDocumentById,
   addDocument,
+  setDocument,
   updateDocument,
   deleteDocument,
   query,

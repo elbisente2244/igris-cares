@@ -3,46 +3,27 @@
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { useInView } from "framer-motion"
-import { useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-
-const galleryImages = [
-  {
-    id: "1",
-    url: "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=2070&auto=format&fit=crop",
-    caption: "Community Health Fair",
-  },
-  {
-    id: "2",
-    url: "https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?q=80&w=2070&auto=format&fit=crop",
-    caption: "Volunteer Training",
-  },
-  {
-    id: "3",
-    url: "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?q=80&w=2070&auto=format&fit=crop",
-    caption: "School Opening Ceremony",
-  },
-  {
-    id: "4",
-    url: "https://images.unsplash.com/photo-1509099836639-18ba1795216d?q=80&w=2031&auto=format&fit=crop",
-    caption: "Clean Water Project",
-  },
-  {
-    id: "5",
-    url: "https://images.unsplash.com/photo-1560252829-804f1aedf1be?q=80&w=2070&auto=format&fit=crop",
-    caption: "Youth Leadership Camp",
-  },
-  {
-    id: "6",
-    url: "https://images.unsplash.com/photo-1593113598332-cd288d649433?q=80&w=2070&auto=format&fit=crop",
-    caption: "Food Distribution Drive",
-  },
-]
+import { galleryImages, type GalleryImage } from "@/lib/data/gallery"
+import { loadPublicGalleryImages } from "@/lib/public-data"
 
 export function GalleryPreview() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
+  const [galleryList, setGalleryList] = useState<GalleryImage[]>(galleryImages)
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      const nextImages = await loadPublicGalleryImages()
+      if (active) setGalleryList(nextImages.slice(0, 6))
+    })()
+    return () => {
+      active = false
+    }
+  }, [])
 
   return (
     <section className="py-24 bg-background">
@@ -67,7 +48,7 @@ export function GalleryPreview() {
 
         {/* Gallery Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">
-          {galleryImages.map((image, index) => (
+          {galleryList.map((image, index) => (
             <motion.div
               key={image.id}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -77,11 +58,12 @@ export function GalleryPreview() {
                 index === 0 || index === 5 ? "row-span-2" : ""
               }`}
             >
-              <div className={`${index === 0 || index === 5 ? "aspect-[3/4]" : "aspect-square"}`}>
+              <div className={`${index === 0 || index === 5 ? "aspect-[3/4]" : "aspect-square"} bg-secondary`}>
                 <img
                   src={image.url}
                   alt={image.caption}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
