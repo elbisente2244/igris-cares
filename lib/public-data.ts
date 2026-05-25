@@ -53,17 +53,8 @@ function isValidEvent(event: PublicEvent): boolean {
   return Boolean(event.id && title)
 }
 
-function mergeEvents(firestoreEvents: PublicEvent[], seedEvents: PublicEvent[]): PublicEvent[] {
-  const byId = new Map<string, PublicEvent>()
-  for (const event of seedEvents) {
-    byId.set(event.id, event)
-  }
-  for (const event of firestoreEvents) {
-    if (isValidEvent(event)) {
-      byId.set(event.id, event)
-    }
-  }
-  return Array.from(byId.values()).sort(
+function sortEventsByDate(list: PublicEvent[]) {
+  return [...list].sort(
     (a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
   )
 }
@@ -129,24 +120,21 @@ export async function loadPublicProjectById(id: string) {
 }
 
 export async function loadPublicEvents() {
-  let firestoreEvents: PublicEvent[] = []
-
   try {
     // Do not orderBy event_date — seeded/admin docs use `date`, not `event_date`
     const docs = await getAllDocuments<any>(COLLECTIONS.EVENTS)
-    firestoreEvents = docs.map(normalizeEvent).filter(isValidEvent)
+    const firestoreEvents = docs.map(normalizeEvent).filter(isValidEvent)
+    // Firestore is source of truth when reachable (deletes must not reappear from seed)
+    return sortEventsByDate(firestoreEvents)
   } catch {
-    firestoreEvents = []
+    return events
   }
-
-  const merged = mergeEvents(firestoreEvents, events)
-  return merged.length > 0 ? merged : events
 }
 
 export async function loadPublicEventById(id: string) {
   try {
     const doc = await getDocumentById<any>(COLLECTIONS.EVENTS, id)
-    return doc ? normalizeEvent(doc) : events.find((event) => event.id === id) ?? null
+    return doc ? normalizeEvent(doc) : null
   } catch {
     return events.find((event) => event.id === id) ?? null
   }

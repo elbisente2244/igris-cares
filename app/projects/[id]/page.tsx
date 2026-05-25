@@ -6,7 +6,7 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { ArrowLeft, MapPin, Calendar, Users, Play, Share2, Heart } from "lucide-react"
 import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
+import { FooterUI } from "@/components/footer-ui"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { projects, type Project } from "@/lib/data/projects"
@@ -48,7 +48,7 @@ export default function ProjectDetailPage() {
         <main className="pt-16 min-h-screen flex items-center justify-center">
           <div className="text-center text-muted-foreground">Loading project...</div>
         </main>
-        <Footer />
+        <FooterUI />
       </>
     )
   }
@@ -65,7 +65,7 @@ export default function ProjectDetailPage() {
             </Button>
           </div>
         </main>
-        <Footer />
+        <FooterUI />
       </>
     )
   }
@@ -314,7 +314,7 @@ export default function ProjectDetailPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <FooterUI />
     </>
   )
 }

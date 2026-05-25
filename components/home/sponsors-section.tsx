@@ -6,7 +6,9 @@ import { useEffect, useRef, useState } from "react"
 import { sponsors as seedSponsors, type Sponsor } from "@/lib/data/partners"
 import { loadPublicSponsors } from "@/lib/public-data"
 
-export function SponsorsSection() {
+type SectionCopy = { kicker?: string; title?: string; description?: string }
+
+export function SponsorsSection({ frontmatter = {} }: { frontmatter?: SectionCopy }) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
   const [sponsorList, setSponsorList] = useState<Sponsor[]>(seedSponsors)
@@ -33,11 +35,14 @@ export function SponsorsSection() {
           className="text-center mb-12"
         >
           <span className="text-primary font-semibold text-sm uppercase tracking-wider">
-            Our Partners
+            {frontmatter.kicker || "Our Partners"}
           </span>
           <h2 className="mt-3 text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-            Trusted by Leading Organizations
+            {frontmatter.title || "Trusted by Leading Organizations"}
           </h2>
+          {frontmatter.description && (
+            <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">{frontmatter.description}</p>
+          )}
         </motion.div>
 
         <div className="relative overflow-hidden">

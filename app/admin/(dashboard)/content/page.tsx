@@ -23,7 +23,7 @@ export default function ContentListPage() {
       <div className="flex-1 p-6">
         <h2 className="text-2xl font-bold mb-4">Editable Markdown content</h2>
         <p className="text-sm text-muted-foreground mb-6">
-          Files stored in the repository under <strong>content/</strong>. Click Edit to open the inline editor, or use the path link to open the file in your editor.
+          Files in <strong>content/</strong> drive homepage sections, page heroes, footer text, and image URLs (e.g. <code className="text-xs">hero.md</code> <code className="text-xs">image_url</code>, <code className="text-xs">site-media.md</code>). Projects, events, gallery, and partners lists still come from Admin → Firestore.
         </p>
 
         <div className="space-y-3">

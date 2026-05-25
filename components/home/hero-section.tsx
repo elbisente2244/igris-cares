@@ -75,8 +75,14 @@ export function HeroSection({ frontmatter = {}, content = "" }: { frontmatter?: 
             >
               {/* Placeholder illustration - replace with branded SVG or image */}
               <img
-                src="https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=1600&auto=format&fit=crop"
-                alt="community illustration - people working together"
+                src={
+                  (typeof frontmatter.image_url === "string" && frontmatter.image_url) ||
+                  "https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=1600&auto=format&fit=crop"
+                }
+                alt={
+                  (typeof frontmatter.image_alt === "string" && frontmatter.image_alt) ||
+                  "community illustration - people working together"
+                }
                 className="object-cover w-full h-full"
                 onError={(e) => { e.currentTarget.style.backgroundColor = '#e6f0fb'; e.currentTarget.style.display = 'none'; }}
               />

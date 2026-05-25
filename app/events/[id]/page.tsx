@@ -6,7 +6,7 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import { ArrowLeft, MapPin, Calendar, Clock, Users, Share2, CalendarPlus } from "lucide-react"
 import { Header } from "@/components/header"
-import { Footer } from "@/components/footer"
+import { FooterUI } from "@/components/footer-ui"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { events, type Event } from "@/lib/data/events"
@@ -61,7 +61,7 @@ export default function EventDetailPage() {
         <main className="pt-16 min-h-screen flex items-center justify-center">
           <div className="text-center text-muted-foreground">Loading event...</div>
         </main>
-        <Footer />
+        <FooterUI />
       </>
     )
   }
@@ -78,7 +78,7 @@ export default function EventDetailPage() {
             </Button>
           </div>
         </main>
-        <Footer />
+        <FooterUI />
       </>
     )
   }
@@ -374,7 +374,7 @@ export default function EventDetailPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <FooterUI />
     </>
   )
 }

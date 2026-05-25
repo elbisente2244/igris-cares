@@ -9,7 +9,16 @@ import { Button } from "@/components/ui/button"
 import { projects, type Project } from "@/lib/data/projects"
 import { loadPublicProjects } from "@/lib/public-data"
 
-export function FeaturedProjects() {
+type SectionCopy = {
+  kicker?: string
+  title?: string
+  description?: string
+  button_text?: string
+  button_link?: string
+  limit?: number
+}
+
+export function FeaturedProjects({ frontmatter = {} }: { frontmatter?: SectionCopy }) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
   const [featuredProjects, setFeaturedProjects] = useState<Project[]>(projects)
@@ -18,7 +27,8 @@ export function FeaturedProjects() {
     let active = true
     ;(async () => {
       const nextProjects = await loadPublicProjects()
-      if (active) setFeaturedProjects(nextProjects.slice(0, 3))
+      const limit = typeof frontmatter.limit === "number" ? frontmatter.limit : 3
+      if (active) setFeaturedProjects(nextProjects.slice(0, limit))
     })()
     return () => {
       active = false
@@ -37,18 +47,19 @@ export function FeaturedProjects() {
         >
           <div>
             <span className="text-primary font-semibold text-sm uppercase tracking-wider">
-              Our Work
+              {frontmatter.kicker || "Our Work"}
             </span>
             <h2 className="mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground tracking-tight text-balance">
-              Featured Projects
+              {frontmatter.title || "Featured Projects"}
             </h2>
             <p className="mt-4 text-lg text-muted-foreground max-w-xl text-pretty">
-              Discover how we&apos;re making a tangible difference in communities through our flagship initiatives.
+              {frontmatter.description ||
+                "Discover how we're making a tangible difference in communities through our flagship initiatives."}
             </p>
           </div>
           <Button variant="outline" asChild className="self-start sm:self-auto">
-            <Link href="/projects">
-              View All Projects
+            <Link href={frontmatter.button_link || "/projects"}>
+              {frontmatter.button_text || "View All Projects"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>

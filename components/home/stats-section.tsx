@@ -5,36 +5,33 @@ import { useInView } from "framer-motion"
 import { useRef, useEffect, useState } from "react"
 import { Users, Heart, MapPin, Calendar } from "lucide-react"
 
-const stats = [
-  {
-    icon: Users,
-    value: 1000,
-    suffix: "+",
-    label: "Lives Impacted",
-    description: "Individuals reached through our programs",
-  },
-  {
-    icon: Heart,
-    value: 10,
-    suffix: "+",
-    label: "Projects Completed",
-    description: "Successful outreach initiatives",
-  },
-  {
-    icon: MapPin,
-    value: 45,
-    suffix: "",
-    label: "Communities Served",
-    description: "Locations across the region",
-  },
-  {
-    icon: Calendar,
-    value: 4,
-    suffix: "+",
-    label: "Years of Impact",
-    description: "Building with care since 2022",
-  },
+const defaultStats = [
+  { icon: Users, value: 1000, suffix: "+", label: "Lives Impacted", description: "Individuals reached through our programs" },
+  { icon: Heart, value: 10, suffix: "+", label: "Projects Completed", description: "Successful outreach initiatives" },
+  { icon: MapPin, value: 45, suffix: "", label: "Communities Served", description: "Locations across the region" },
+  { icon: Calendar, value: 4, suffix: "+", label: "Years of Impact", description: "Building with care since 2022" },
 ]
+
+const statIcons = [Users, Heart, MapPin, Calendar]
+
+function statsFromFrontmatter(fm: Record<string, unknown>) {
+  const built = [1, 2, 3, 4].map((i) => {
+    const value = fm[`stat${i}_value`]
+    const suffix = fm[`stat${i}_suffix`]
+    const label = fm[`stat${i}_label`]
+    const description = fm[`stat${i}_description`]
+    if (label === undefined && value === undefined) return null
+    return {
+      icon: statIcons[i - 1],
+      value: typeof value === "number" ? value : Number(value) || defaultStats[i - 1].value,
+      suffix: typeof suffix === "string" ? suffix : defaultStats[i - 1].suffix,
+      label: (label as string) || defaultStats[i - 1].label,
+      description: (description as string) || defaultStats[i - 1].description,
+    }
+  })
+  if (built.every((s) => s === null)) return defaultStats
+  return built.map((s, i) => s ?? defaultStats[i])
+}
 
 function AnimatedCounter({ value, suffix }: { value: number; suffix: string }) {
   const [count, setCount] = useState(0)
@@ -68,7 +65,8 @@ function AnimatedCounter({ value, suffix }: { value: number; suffix: string }) {
   )
 }
 
-export function StatsSection() {
+export function StatsSection({ frontmatter = {} }: { frontmatter?: Record<string, unknown> }) {
+  const stats = statsFromFrontmatter(frontmatter)
   const containerRef = useRef(null)
   const isInView = useInView(containerRef, { once: true, margin: "-100px" })
 

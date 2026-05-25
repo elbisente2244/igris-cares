@@ -7,7 +7,16 @@ import { useRef } from "react"
 import { ArrowRight, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-export function CTASection() {
+type SectionCopy = {
+  title?: string
+  description?: string
+  primary_button?: string
+  primary_link?: string
+  secondary_button?: string
+  secondary_link?: string
+}
+
+export function CTASection({ frontmatter = {} }: { frontmatter?: SectionCopy }) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
@@ -43,10 +52,11 @@ export function CTASection() {
           </motion.div>
 
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-primary-foreground tracking-tight mb-6 text-balance">
-            Ready to Make a Difference?
+            {frontmatter.title || "Ready to Make a Difference?"}
           </h2>
           <p className="text-lg text-primary-foreground/80 max-w-2xl mx-auto mb-10 text-pretty">
-            Whether you want to volunteer, donate, or partner with us, there are many ways to join our mission and create lasting impact in communities.
+            {frontmatter.description ||
+              "Whether you want to volunteer, donate, or partner with us, there are many ways to join our mission and create lasting impact in communities."}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -55,8 +65,8 @@ export function CTASection() {
               className="h-12 px-8 text-base bg-primary-foreground text-primary hover:bg-primary-foreground/90"
               asChild
             >
-              <Link href="/contact">
-                Get Involved
+              <Link href={frontmatter.primary_link || "/contact"}>
+                {frontmatter.primary_button || "Get Involved"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -66,7 +76,9 @@ export function CTASection() {
               className="h-12 px-8 text-base border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 bg-transparent"
               asChild
             >
-              <Link href="/partners">Become a Partner</Link>
+              <Link href={frontmatter.secondary_link || "/partners"}>
+                {frontmatter.secondary_button || "Become a Partner"}
+              </Link>
             </Button>
           </div>
         </motion.div>

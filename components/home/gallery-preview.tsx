@@ -9,7 +9,16 @@ import { Button } from "@/components/ui/button"
 import { galleryImages, type GalleryImage } from "@/lib/data/gallery"
 import { loadPublicGalleryImages } from "@/lib/public-data"
 
-export function GalleryPreview() {
+type SectionCopy = {
+  kicker?: string
+  title?: string
+  description?: string
+  button_text?: string
+  button_link?: string
+  limit?: number
+}
+
+export function GalleryPreview({ frontmatter = {} }: { frontmatter?: SectionCopy }) {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
   const [galleryList, setGalleryList] = useState<GalleryImage[]>(galleryImages)
@@ -18,7 +27,8 @@ export function GalleryPreview() {
     let active = true
     ;(async () => {
       const nextImages = await loadPublicGalleryImages()
-      if (active) setGalleryList(nextImages.slice(0, 6))
+      const limit = typeof frontmatter.limit === "number" ? frontmatter.limit : 6
+      if (active) setGalleryList(nextImages.slice(0, limit))
     })()
     return () => {
       active = false
@@ -36,13 +46,14 @@ export function GalleryPreview() {
           className="text-center mb-12"
         >
           <span className="text-primary font-semibold text-sm uppercase tracking-wider">
-            Our Impact
+            {frontmatter.kicker || "Our Impact"}
           </span>
           <h2 className="mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground tracking-tight text-balance">
-            Moments That Matter
+            {frontmatter.title || "Moments That Matter"}
           </h2>
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto text-pretty">
-            A glimpse into the lives we&apos;ve touched and the communities we&apos;ve helped transform.
+            {frontmatter.description ||
+              "A glimpse into the lives we've touched and the communities we've helped transform."}
           </p>
         </motion.div>
 
@@ -83,8 +94,8 @@ export function GalleryPreview() {
           className="text-center"
         >
           <Button size="lg" asChild>
-            <Link href="/gallery">
-              View Full Gallery
+            <Link href={frontmatter.button_link || "/gallery"}>
+              {frontmatter.button_text || "View Full Gallery"}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>

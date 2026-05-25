@@ -9,26 +9,27 @@ export function MissionSection({ frontmatter = {}, content = "" }: { frontmatter
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
 
-  const values = frontmatter.values || [
+  const values = [
     {
       icon: Target,
-      title: "Our Mission",
+      title: (frontmatter.mission_title as string) || "Our Mission",
       description:
-        frontmatter.description ||
+        (frontmatter.mission_text as string) ||
         "To create sustainable change in underserved communities through collaborative partnerships, innovative programs, and genuine care for every individual we serve.",
     },
     {
       icon: Eye,
-      title: "Our Vision",
+      title: (frontmatter.vision_title as string) || "Our Vision",
       description:
-        frontmatter.vision ||
+        (frontmatter.vision_text as string) ||
+        (frontmatter.vision as string) ||
         "A world where every community has access to the resources, opportunities, and support they need to thrive and build a brighter future for generations to come.",
     },
     {
       icon: Sparkles,
-      title: "Our Values",
+      title: (frontmatter.values_title as string) || "Our Values",
       description:
-        frontmatter.values_text ||
+        (frontmatter.values_text as string) ||
         "Integrity, compassion, sustainability, and collaboration guide everything we do. We believe in transparency, measurable impact, and empowering local leaders.",
     },
   ]
